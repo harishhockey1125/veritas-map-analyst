@@ -1,6 +1,6 @@
 import React from 'react';
 import { AnalysisConfig, AnalysisMode, ModelType } from '../types';
-import { Settings, Zap, BrainCircuit, Activity, TableProperties, FileText } from 'lucide-react';
+import { Settings, Zap, BrainCircuit, Activity, TableProperties, FileText, AlertTriangle } from 'lucide-react';
 
 interface AnalysisControlsProps {
   config: AnalysisConfig;
@@ -56,7 +56,7 @@ const AnalysisControls: React.FC<AnalysisControlsProps> = ({ config, setConfig, 
             <Zap className={`w-5 h-5 mt-0.5 ${config.model === ModelType.FLASH ? 'text-primary-400' : 'text-slate-500'}`} />
             <div>
               <div className="font-medium">Standard Speed</div>
-              <div className="text-xs opacity-70 mt-1">Gemini 2.5 Flash. Fast, efficient, good for general tasks.</div>
+              <div className="text-xs opacity-70 mt-1">Gemini 2.0 Flash. Fast, efficient, stable on Free Tier.</div>
             </div>
           </button>
 
@@ -71,21 +71,22 @@ const AnalysisControls: React.FC<AnalysisControlsProps> = ({ config, setConfig, 
           >
             <BrainCircuit className={`w-5 h-5 mt-0.5 ${config.model === ModelType.PRO_REASONING ? 'text-purple-400' : 'text-slate-500'}`} />
             <div>
-              <div className="font-medium">Deep Reasoner</div>
-              <div className="text-xs opacity-70 mt-1">Gemini 3 Pro. Highest accuracy with extended thinking.</div>
+              <div className="font-medium">Deep Reasoner (Safe Mode)</div>
+              {/* UPDATED DESCRIPTION: Reflects that we are using Flash to avoid crashes */}
+              <div className="text-xs opacity-70 mt-1">Gemini 2.0 Flash (Mapped). Use this for consistent analysis without rate limits.</div>
             </div>
           </button>
         </div>
       </div>
 
-      {/* Thinking Budget Slider (Only for Pro) */}
+      {/* Thinking Budget Slider - DISABLED VISUALLY for Free Tier Stability */}
       {config.model === ModelType.PRO_REASONING && (
-        <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300 opacity-60">
           <div className="flex justify-between items-center">
              <label className="text-xs font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2">
-               Thinking Budget <span className="bg-purple-500/20 text-purple-300 px-1.5 rounded text-[10px]">BETA</span>
+               Thinking Budget
              </label>
-             <span className="text-xs text-slate-400 font-mono">{config.thinkingBudget} tokens</span>
+             <span className="text-xs text-slate-400 font-mono">Auto</span>
           </div>
           <input 
             type="range" 
@@ -94,12 +95,15 @@ const AnalysisControls: React.FC<AnalysisControlsProps> = ({ config, setConfig, 
             step="1024" 
             value={config.thinkingBudget}
             onChange={handleBudgetChange}
-            disabled={isAnalyzing}
-            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+            disabled={true} 
+            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-not-allowed accent-slate-500"
           />
-          <p className="text-xs text-slate-500 leading-relaxed">
-            Higher budgets allow the model to "think" longer, exploring multiple reasoning paths before answering. Use max for complex logic.
-          </p>
+          <div className="flex items-start gap-2 text-xs text-amber-400/80 bg-amber-900/20 p-2 rounded">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            <p>
+              Thinking budget is disabled in Free Tier Safe Mode to prevent "400 Bad Request" errors.
+            </p>
+          </div>
         </div>
       )}
 

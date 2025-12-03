@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Loader2, Copy, Check, Download, Activity } from 'lucide-react';
+import { Loader2, Copy, Check, Download, Table } from 'lucide-react';
 import { ModelType } from '../types';
 
 interface ResultsDisplayProps {
@@ -31,7 +31,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isAnalyzing, mo
     // Extract headers and rows
     const csvRows = [];
     
-    // Process header & data
+    // Process header
     // Filter out the separator line (contains ---)
     const dataLines = tableLines.filter(line => !line.includes('---'));
     
@@ -79,7 +79,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isAnalyzing, mo
           {isAnalyzing && (
              <span className="flex items-center gap-1.5 text-xs font-normal text-primary-400 ml-2 bg-primary-500/10 px-2 py-0.5 rounded-full">
                <Loader2 className="w-3 h-3 animate-spin" />
-               Analyzing...
+               {modelType === ModelType.PRO_REASONING ? 'Reasoning...' : 'Processing...'}
              </span>
           )}
         </h3>
@@ -121,5 +121,21 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, isAnalyzing, mo
     </div>
   );
 };
+
+// Icon helper for the empty state
+const Activity = ({ className }: { className?: string }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+  </svg>
+);
 
 export default ResultsDisplay;

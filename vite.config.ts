@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   define: {
-    // This allows the app to read the API Key from Netlify's environment variables
-    'process.env.API_KEY': JSON.stringify(process.env.API_KEY)
+    // Falls back to empty string to prevent build errors if key is missing during build
+    'process.env.API_KEY': JSON.stringify(process.env.API_KEY || '')
   }
 });

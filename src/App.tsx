@@ -12,9 +12,9 @@ const App: React.FC = () => {
   const [images, setImages] = useState<{data: string, mimeType: string, preview: string}[]>([]);
   
   const [config, setConfig] = useState<AnalysisConfig>({
-    model: ModelType.PRO_REASONING, // Default to most accurate
+    model: ModelType.FLASH_2_0, // Default to Gemini 2.0 Flash
     mode: AnalysisMode.GENERAL,
-    thinkingBudget: 8192, // Good default for deep reasoning
+    thinkingBudget: 8192,
   });
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -106,10 +106,10 @@ const App: React.FC = () => {
             <h1 className="text-xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
               Veritas AI
             </h1>
-            <span className="text-xs font-mono text-slate-500 border border-slate-800 px-1.5 py-0.5 rounded ml-2">v1.2 Bulk</span>
+            <span className="text-xs font-mono text-slate-500 border border-slate-800 px-1.5 py-0.5 rounded ml-2">v2.0 Flash</span>
           </div>
           <div className="text-xs text-slate-500">
-            Powered by Gemini 3 Pro
+            Powered by Google Gemini
           </div>
         </header>
 

@@ -1,6 +1,6 @@
 export enum ModelType {
-  FLASH = 'gemini-2.0-flash-exp',
-  PRO_REASONING = 'gemini-2.0-flash-exp'
+  FLASH = 'gemini-2.0-flash',
+  PRO_REASONING = 'gemini-2.0-flash'
 }
 
 export enum AnalysisMode {

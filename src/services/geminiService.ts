@@ -1,6 +1,9 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { AnalysisConfig, AnalysisMode, ModelType } from "../types";
 
+// --- HELPER: Wait function for retries ---
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // Helper to construct the system prompt based on mode
 const getSystemInstruction = (mode: AnalysisMode, config: AnalysisConfig): string => {
   const base = "You are Veritas, a world-class text analysis AI known for precision, depth, and unwavering accuracy.";
@@ -91,33 +94,63 @@ export const streamAnalysis = async (
     systemInstruction: getSystemInstruction(config.mode, config),
   };
 
-  // Apply Thinking Config if using Pro Reasoning
-  if (config.model === ModelType.PRO_REASONING) {
-    modelConfig.thinkingConfig = {
-      thinkingBudget: config.thinkingBudget
-    };
-  }
+  // --- CRITICAL FIX: DISABLED THINKING CONFIG ---
+  // The 'gemini-1.5-flash' model throws Error 400 if 'thinkingConfig' is present.
+  // We have removed the if-block here to prevent that error.
 
-  try {
-    const responseStream = await ai.models.generateContentStream({
-      model: config.model,
-      contents: { parts },
-      config: modelConfig,
-    });
+  // --- RETRY LOGIC START ---
+  const MAX_RETRIES = 3;
+  let attempt = 0;
 
-    let fullText = "";
+  while (attempt < MAX_RETRIES) {
+    try {
+      const responseStream = await ai.models.generateContentStream({
+        model: config.model,
+        contents: { parts },
+        config: modelConfig,
+      });
 
-    for await (const chunk of responseStream) {
-      const chunkText = (chunk as GenerateContentResponse).text;
-      if (chunkText) {
-        fullText += chunkText;
-        onChunk(fullText);
+      let fullText = "";
+
+      for await (const chunk of responseStream) {
+        const chunkText = (chunk as GenerateContentResponse).text;
+        if (chunkText) {
+          fullText += chunkText;
+          onChunk(fullText);
+        }
+      }
+
+      // If we finish the loop successfully, return the text
+      return fullText;
+
+    } catch (error: any) {
+      // Check if it is a Rate Limit (429) or Quota Exceeded error
+      const isRateLimit = 
+        error.status === 429 || 
+        (error.message && error.message.includes("429")) || 
+        (error.message && error.message.includes("Quota exceeded"));
+
+      if (isRateLimit) {
+        attempt++;
+        if (attempt >= MAX_RETRIES) {
+          console.error("Max retries exceeded for Rate Limit.");
+          throw error; // Give up after max retries
+        }
+
+        // Exponential backoff: Wait 5s, then 10s, then 15s
+        const delayTime = attempt * 5000;
+        console.warn(`Rate limit hit (429). Retrying attempt ${attempt} of ${MAX_RETRIES} in ${delayTime}ms...`);
+        
+        // Wait before looping again
+        await wait(delayTime);
+      } else {
+        // If it's NOT a rate limit error (e.g. Invalid API Key, Bad Request), fail immediately
+        console.error("Non-retriable error analyzing text:", error);
+        throw error;
       }
     }
-
-    return fullText;
-  } catch (error) {
-    console.error("Error analyzing text:", error);
-    throw error;
   }
+  // --- RETRY LOGIC END ---
+
+  throw new Error("Unexpected end of analysis stream.");
 };

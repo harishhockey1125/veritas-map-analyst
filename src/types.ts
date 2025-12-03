@@ -1,5 +1,6 @@
 export enum ModelType {
   FLASH = 'gemini-2.0-flash',
+  // Mapped to Flash to ensure stability on the Free Tier
   PRO_REASONING = 'gemini-2.0-flash'
 }
 

@@ -66,15 +66,9 @@ export const analyzeVillageMap = async (
     manualPartitionId?: string
 ): Promise<AnalysisResult> => {
   
-  // SAFE ACCESS: Accessing process.env directly in a browser environment without Vite defining it
-  // will cause a crash. We wrap this to be safe, though vite.config.ts should handle the replacement.
-  let apiKey = '';
-  try {
-    // @ts-ignore
-    apiKey = process.env.API_KEY; 
-  } catch (e) {
-    console.warn("process.env.API_KEY is not defined. Ensure vite.config.ts defines it.");
-  }
+  // Access API key via Vite standard standard (injected by vite.config.ts)
+  // @ts-ignore
+  const apiKey = import.meta.env.VITE_API_KEY;
 
   if (!file) {
     // If no file provided, just return mock data for demo

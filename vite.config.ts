@@ -3,18 +3,18 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
+  // This helps read .env.local if you are running locally
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
     plugins: [react()],
     build: {
-      outDir: 'dist',
+      outDir: 'dist', // Ensures Netlify finds the right folder
     },
     define: {
-      // 1. Polyfill process.env for libraries that rely on it (prevents crash)
-      'process.env': {},
-      // 2. Map the Netlify/System API_KEY to the Vite standard variable
-      'import.meta.env.VITE_API_KEY': JSON.stringify(env.API_KEY || env.VITE_API_KEY || ''),
+      // This is the CRITICAL fix for Netlify Environment Variables.
+      // It checks for VITE_API_KEY first, then falls back to API_KEY (which Netlify sometimes uses).
+      'import.meta.env.VITE_API_KEY': JSON.stringify(env.VITE_API_KEY || env.API_KEY || ''),
     },
   };
 });

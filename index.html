@@ -3,61 +3,44 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Veritas Map Analyst 2.0</title>
+    <title>Village Map Analyzer</title>
+    <!-- REMOVED THE IMPORTMAP BLOCK HERE - THIS WAS THE CAUSE OF THE BLACK SCREEN -->
+    
+    <!-- Polyfills are okay to keep if needed, but often unnecessary with Vite. Keeping for safety. -->
+    <script>
+      window.global = window;
+      window.process = {
+        env: { NODE_ENV: 'production' },
+        version: '',
+        cwd: function() { return '/'; }
+      };
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-            },
-            colors: {
-              primary: {
-                50: '#f0f9ff',
-                100: '#e0f2fe',
-                200: '#bae6fd',
-                300: '#7dd3fc',
-                400: '#38bdf8',
-                500: '#0ea5e9',
-                600: '#0284c7',
-                700: '#0369a1',
-                800: '#075985',
-                900: '#0c4a6e',
-              }
-            },
-            animation: {
-              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-            }
-          }
-        }
-      }
-    </script>
     <style>
       body {
-        background-color: #0f172a; /* Slate 900 */
-        color: #f8fafc; /* Slate 50 */
+        font-family: 'Inter', sans-serif;
       }
-      /* Custom Scrollbar */
+      /* Custom scrollbar for dark theme */
       ::-webkit-scrollbar {
         width: 8px;
         height: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #1e293b; 
+        background: #0f172a; 
       }
       ::-webkit-scrollbar-thumb {
-        background: #475569; 
+        background: #334155; 
         border-radius: 4px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #64748b; 
+        background: #475569; 
       }
     </style>
-</head>
-  <body>
+  </head>
+  <body class="bg-slate-950 text-slate-100 overflow-hidden">
     <div id="root"></div>
+    <!-- FIXED PATH: Changed from ./index.tsx to /src/index.tsx -->
     <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>

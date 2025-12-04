@@ -1,34 +1,19 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { AnalysisResult } from "../types";
 
-// Mock data to ensure the UI works beautifully without an API key
 const MOCK_DATA: AnalysisResult = {
   partitions: [
     {
-      villageName: "Rampur Village",
-      partitionId: "V05-C1",
-      surveyNumbers: ["12/1", "12/2", "14/A", "15", "101"],
-    },
-    {
-      villageName: "Rampur Village",
-      partitionId: "V05-C2",
-      surveyNumbers: ["16", "17/1", "17/2", "18"],
-    },
-    {
-      villageName: "Rampur Village",
-      partitionId: "V05-C6",
-      surveyNumbers: ["12/3", "12/4", "101", "19/B"], // 101 overlaps with C1
-    },
-    {
-      villageName: "Rampur Village",
-      partitionId: "V05-C7",
-      surveyNumbers: ["20", "21", "22/A", "12/3"], // 12/3 overlaps with C6
+      villageName: "DEMO VILLAGE",
+      partitionId: "V01-C1",
+      surveyNumbers: ["101", "102", "103/A"],
+      remarks: "No API Key provided - using demo data"
     }
   ]
 };
 
-const fileToGenerativePart = async (file: File): Promise<{ inlineData: { data: string; mimeType: string } }> => {
-  return new Promise((resolve, reject) => {
+const fileToGenerativePart = async (file: File) => {
+  return new Promise<{ inlineData: { data: string; mimeType: string } }>((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64Data = reader.result as string;
@@ -45,124 +30,55 @@ const fileToGenerativePart = async (file: File): Promise<{ inlineData: { data: s
   });
 };
 
-const applyOverrides = (data: AnalysisResult, manualVillageName?: string, manualPartitionId?: string): AnalysisResult => {
-  const deepCopy = JSON.parse(JSON.stringify(data)) as AnalysisResult;
-  
-  if (manualVillageName || manualPartitionId) {
-    deepCopy.partitions = deepCopy.partitions.map(p => {
-        return {
-            ...p,
-            villageName: manualVillageName || p.villageName,
-            partitionId: manualPartitionId || p.partitionId
-        };
-    });
-  }
-  return deepCopy;
-};
-
 export const analyzeVillageMap = async (
-    file: File | null, 
+    file: File, 
     manualVillageName?: string, 
     manualPartitionId?: string
 ): Promise<AnalysisResult> => {
-  
-  // Access API key via Vite standard standard (injected by vite.config.ts)
-  // @ts-ignore
+    
   const apiKey = import.meta.env.VITE_API_KEY;
 
-  if (!file) {
-    // If no file provided, just return mock data for demo
-    const result = applyOverrides(MOCK_DATA, manualVillageName, manualPartitionId);
-    return new Promise(resolve => setTimeout(() => resolve(result), 1500));
-  }
-
-  // If no API key is present, simulate analysis with mock data
   if (!apiKey) {
-    console.warn("No API Key found. Using mock data for demonstration.");
-    const result = applyOverrides(MOCK_DATA, manualVillageName, manualPartitionId);
-    return new Promise(resolve => setTimeout(() => resolve(result), 2000));
+    console.warn("Missing VITE_API_KEY. Using mock data.");
+    return new Promise(resolve => setTimeout(() => resolve(MOCK_DATA), 1500));
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
-    
-    // Prepare image
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
     const imagePart = await fileToGenerativePart(file);
-
-    let prompt = `
-      Analyze this village map image. 
-      Identify the Village Name (if visible, otherwise guess 'Unknown').
-      Identify all partitions (regions labeled like V05-C1, V05-C6, etc.).
-      For each partition, extract all Survey Numbers visible inside it.
-    `;
-
-    if (manualVillageName) {
-        prompt += `\nUSER CONTEXT: The user has manually specified the Village Name as "${manualVillageName}". Use this name for all partitions unless another name is clearly visible.`;
-    }
-
-    if (manualPartitionId) {
-        prompt += `\nUSER CONTEXT: The user has manually specified the Partition ID as "${manualPartitionId}". Use this ID for the detected partition.`;
-    }
-
-    prompt += `
-      IMPORTANT: If a survey number lies on the border or seems to belong to multiple partitions, list it in BOTH partitions.
-      
-      Return the data in this JSON structure:
-      {
-        "partitions": [
-          {
-            "villageName": "string",
-            "partitionId": "string",
-            "surveyNumbers": ["string", "string"]
-          }
-        ]
-      }
-    `;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: {
-        parts: [imagePart, { text: prompt }]
-      },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            partitions: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  villageName: { type: Type.STRING },
-                  partitionId: { type: Type.STRING },
-                  surveyNumbers: { 
-                    type: Type.ARRAY,
-                    items: { type: Type.STRING }
-                  }
-                },
-                required: ["villageName", "partitionId", "surveyNumbers"]
-              }
-            }
-          }
-        }
-      }
-    });
-
-    const text = response.text;
-    if (!text) throw new Error("No response from AI");
     
-    return JSON.parse(text) as AnalysisResult;
+    const prompt = `
+    Analyze this village map. Extract the following in JSON format:
+    1. Village Name (use "${manualVillageName || 'Unknown'}" if provided or not found).
+    2. Partition ID (use "${manualPartitionId || 'Unknown'}" if provided or not found).
+    3. List of all Survey Numbers visible.
+    
+    Return ONLY valid JSON:
+    {
+      "partitions": [
+        {
+          "villageName": "string",
+          "partitionId": "string",
+          "surveyNumbers": ["string"]
+        }
+      ]
+    }`;
+
+    const result = await model.generateContent([prompt, imagePart]);
+    const response = await result.response;
+    const text = response.text();
+    
+    const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(jsonStr) as AnalysisResult;
 
   } catch (error) {
-    console.error("Analysis failed:", error);
-    // Fallback to mock data on error so the app remains usable in demo
-    const result = applyOverrides(MOCK_DATA, manualVillageName, manualPartitionId);
-    return result;
+    console.error("AI Error:", error);
+    throw new Error("Failed to analyze map");
   }
 };
 
-export const getSampleData = (manualVillageName?: string, manualPartitionId?: string): Promise<AnalysisResult> => {
-    const result = applyOverrides(MOCK_DATA, manualVillageName, manualPartitionId);
-    return new Promise(resolve => setTimeout(() => resolve(result), 800));
-}
+export const getSampleData = async (): Promise<AnalysisResult> => {
+    return new Promise(resolve => setTimeout(() => resolve(MOCK_DATA), 800));
+};

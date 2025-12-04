@@ -1,0 +1,12 @@
+# Create this file in your ROOT folder (next to package.json)
+# It tells Netlify how to build your site and handles redirects
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# This prevents "Page Not Found" errors if you refresh the page
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
